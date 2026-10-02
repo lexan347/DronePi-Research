@@ -1,0 +1,110 @@
+From c4813fa432162516f0fc36fc97caf44839198096 Mon Sep 17 00:00:00 2001
+From: Alexander Angulo <205090601+lexan347@users.noreply.github.com>
+Date: Fri, 2 Oct 2026 10:16:04 -0400
+Subject: [PATCH] Fix waypoint timeout, local validation, and collage
+ georeferencing
+
+---
+ .../flight/waypoint_validator.py              | 38 +++++++++----------
+ unitree_drone_mapper/main.py                  |  3 +-
+ .../utils/ortho_tools/mosaic_builder.py       |  3 +-
+ 3 files changed, 23 insertions(+), 21 deletions(-)
+
+diff --git a/unitree_drone_mapper/flight/waypoint_validator.py b/unitree_drone_mapper/flight/waypoint_validator.py
+index f373fb2..9525065 100644
+--- a/unitree_drone_mapper/flight/waypoint_validator.py
++++ b/unitree_drone_mapper/flight/waypoint_validator.py
+@@ -35,6 +35,7 @@ WAYPOINT_MAX_RADIUS_M.
+ 
+ GPS FALLBACK
+ ------------
++Finite-coordinate and local-radius checks always run first.
+ If GpsReader reports no reliable fix, validation is SKIPPED (non-fatal) and
+ the reason is logged. GPS is secondary and non-authoritative; blocking a
+ mission on GPS unavailability would be worse than the stale-waypoint risk
+@@ -117,11 +118,28 @@ class WaypointValidator:
+                 reason="waypoint_list_empty",
+             )
+ 
++        # Local limits apply even when GPS is absent. Validate altitude for
++        # finiteness here; mission-specific vertical bounds remain separate.
++        if not math.isfinite(self._max_radius_m) or self._max_radius_m <= 0:
++            return ValidationResult(passed=False, skipped=False,
++                                    reason="invalid_max_radius")
++        for i, (ex, ey, ez) in enumerate(waypoints):
++            if not all(math.isfinite(v) for v in (ex, ey, ez)):
++                return ValidationResult(passed=False, skipped=False,
++                                        reason="waypoint_not_finite",
++                                        offending_index=i)
++            radius = math.hypot(ex, ey)
++            if radius > self._max_radius_m:
++                return ValidationResult(passed=False, skipped=False,
++                                        reason="waypoint_exceeds_max_radius",
++                                        offending_index=i,
++                                        offending_radius_m=round(radius, 1))
++
+         # ── 1. GPS fix ────────────────────────────────────────────────────────
+         if not self._gps.is_reliable():
+             logger.warning(
+                 "[WaypointValidator] GPS fix unavailable or unreliable. "
+-                "Skipping stale-waypoint check (non-fatal). "
++                "Local checks passed; skipping GPS home check (non-fatal). "
+                 "Set home manually or improve GPS signal before flight."
+             )
+             return ValidationResult(
+@@ -142,24 +160,6 @@ class WaypointValidator:
+                 reason="home_set_failed_check_skipped",
+             )
+ 
+-        # ── 2. Per-waypoint radius check ──────────────────────────────────────
+-        for i, (ex, ey, _ez) in enumerate(waypoints):
+-            radius = math.sqrt(ex**2 + ey**2)
+-            if radius > self._max_radius_m:
+-                logger.error(
+-                    f"[WaypointValidator] REJECT: Waypoint {i+1} at ENU "
+-                    f"({ex:.1f}, {ey:.1f}) is {radius:.1f} m from origin — "
+-                    f"exceeds limit of {self._max_radius_m:.1f} m. "
+-                    "Possible stale waypoints from a different location."
+-                )
+-                return ValidationResult(
+-                    passed=False,
+-                    skipped=False,
+-                    reason="waypoint_exceeds_max_radius",
+-                    offending_index=i,
+-                    offending_radius_m=round(radius, 1),
+-                )
+-
+         logger.info(
+             f"[WaypointValidator] PASS: {len(waypoints)} waypoints, "
+             f"all within {self._max_radius_m:.1f} m of origin. "
+diff --git a/unitree_drone_mapper/main.py b/unitree_drone_mapper/main.py
+index 5d1673b..31127cb 100644
+--- a/unitree_drone_mapper/main.py
++++ b/unitree_drone_mapper/main.py
+@@ -279,7 +279,8 @@ class MainNode(SafeFlightMixin, Node):
+             dist_v = abs(self.local_z - z)
+             if dist_h < POS_TOLERANCE_M and dist_v < ALT_TOLERANCE_M:
+                 return True
+-        return not (self._pilot_override or self._offboard_aborted)
++        # Arrival was not confirmed before the deadline.
++        return False
+ 
+     # ── Camera trigger ────────────────────────────────────────────────────────
+ 
+diff --git a/unitree_drone_mapper/utils/ortho_tools/mosaic_builder.py b/unitree_drone_mapper/utils/ortho_tools/mosaic_builder.py
+index 46481e0..fc708e6 100644
+--- a/unitree_drone_mapper/utils/ortho_tools/mosaic_builder.py
++++ b/unitree_drone_mapper/utils/ortho_tools/mosaic_builder.py
+@@ -157,7 +157,8 @@ class MosaicBuilder:
+         canvas = self._collage_fallback(images)
+         if canvas is not None:
+             print(f"  [MosaicBuilder] Collage: {canvas.shape[1]}×{canvas.shape[0]}px")
+-        return canvas, geo
++        # A grid collage has no valid spatial placement.
++        return canvas, None
+ 
+     def write_world_file(
+         self,
+-- 
+2.43.0
+
