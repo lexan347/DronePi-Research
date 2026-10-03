@@ -1,6 +1,8 @@
 # Simulation environment and faculty questions 1–3
 
-Updated October 2, 2026. Status: reference simulation documented; complete reproducibility capture still open.
+Updated October 3, 2026. Status: reference flight and ROS telemetry reception demonstrated; candidate-specific integration and complete reproducibility capture remain open.
+
+Latest evidence: [October 3 daily checkpoint](iterations/2026-09-27/Daily_Log_2026-10-03.md) and [flight manifest](iterations/2026-09-27/Flight_Manifest_2026-10-03.json). October 1 observations below remain historical evidence.
 
 ## 1. Are we using Gazebo and SITL?
 
@@ -19,9 +21,11 @@ flowchart TD
     Q["QGroundControl"] -->|MAVLink commands| P
     P -->|MAVLink telemetry| Q
     P --> L["ULog evidence"]
+    P -->|UDP 8888 telemetry| D["Micro XRCE-DDS Agent 2.4.3"]
+    D --> R["ROS Jazzy telemetry subscriber"]
 ```
 
-The diagram describes the PX4/Gazebo reference arrangement. ROS 2, MAVROS, Point-LIO and the DronePi mission application are not claimed as integrated into these runs. Ports and launch environment overrides have not yet been captured.
+The diagram includes the October 3 ROS telemetry reception check. PX4 used agent endpoint 127.0.0.1:8888; QGroundControl used MAVLink UDP 18570 to remote 14550. ROS control commands, MAVROS, Point-LIO and the DronePi mission application have not been validated in this arrangement.
 
 | Component | Recorded version or state | Evidence / limit |
 |---|---|---|
@@ -32,7 +36,9 @@ The diagram describes the PX4/Gazebo reference arrangement. ROS 2, MAVROS, Point
 | Gazebo | Native Harmonic, gz-sim 8.15.0 | User gz version output; distinct from installed Citadel Snap |
 | QGroundControl | x86_64 AppImage; exact version and checksum pending | Startup screenshot; connected reference simulation screenshot |
 | Vehicle / world | x500_0 / default | October 1 screenshot |
-| ROS / colcon / conda | Not found on current PATH; no setup files found in searched locations | October 2 terminal check; not proof of absence everywhere |
+| ROS / colcon | Jazzy desktop 0.11.0-1noble.20260905.070740; ros-dev-tools 1.0.3; colcon on PATH | October 3 package output and talker/listener test |
+| DDS Agent | v2.4.3; commit 73622810d984349b80bbac0ef55fc0b694d62222 | Successful workspace build and connected client |
+| px4_msgs | v1.17.0; commit 86d8239e962f6939e05c3737784f60c02fa884db | Build transcript and decoded ROS telemetry |
 | FreeCAD | Mechanical 0.22.0dev.34125, Snap 228 | CAD support tool, outside simulation control loop |
 | DronePi code | Baseline 57d720586f81b035187e65cb0358b1f58233b36e; local repair c4813fa432162516f0fc36fc97caf44839198096 | 12 isolated regression checks pass; no full integration validation |
 
@@ -45,7 +51,7 @@ The diagram describes the PX4/Gazebo reference arrangement. ROS 2, MAVROS, Point
 
 ### Reproduction status
 
-The upstream reference command is `make px4_sitl gz_x500`, run in the PX4 source directory. This is a documented reproduction starting point, **not a recovered historical shell command**. Exact original command, environment overrides and local modifications remain to be captured.
+The October 3 run explicitly used `make px4_sitl gz_x500` in the PX4 source directory. Startup output identifies `Tools/simulation/gz/worlds/default.sdf`, `x500_0`, Gazebo 8.15.0 and SYS_AUTOSTART=4001. The October 1 exact command remains unconfirmed. October 3 Git output shows a clean outer worktree and matching Gazebo submodule revision `b6127f4ec20de867e215fb5f78ae88b80f371909`. Full environment overrides and runtime parameter snapshot remain to be captured.
 
 Expected source locations to verify in the user's pinned checkout:
 
@@ -54,7 +60,7 @@ Expected source locations to verify in the user's pinned checkout:
 - `Tools/simulation/gz/models/x500_base/model.sdf` and referenced meshes
 - `Tools/simulation/gz/worlds/default.sdf`
 
-The model repository/submodule commit must be recorded separately from the PX4 commit. Do not assume the outer Git revision alone pins every local asset. The mass, inertia, rotor thrust/drag, sensor rates/noise, physics step, wind and payload settings have not yet been independently inventoried. No candidate-specific values should be filled in by assumption.
+The model repository/submodule commit is now recorded separately in the October 3 manifest. Do not assume the outer Git revision alone pins every local asset. The mass, inertia, rotor thrust/drag, sensor rates/noise, physics step, wind and payload settings have not yet been independently inventoried. No candidate-specific values should be filled in by assumption.
 
 Before the next run, archive the exact command, software versions, submodule revisions, clean/dirty status, SDFs and dependencies, PX4 parameter export, environment overrides, mission file, expected result and acceptance criteria. Afterward add logs, screenshot, observed result, failures and shutdown state. Use a unique dated run ID.
 
@@ -75,3 +81,11 @@ User-provided October 1 screenshot, used as project evidence. The map is the sim
 - [Original DronePi project](https://github.com/Xavier-Nieves/DronePi-Autonomous-Mapping)
 
 Documentation establishes the upstream workflow; project claims above are tied separately to supplied terminal output, screenshot and logs. No full mission, mapping accuracy, physical-aircraft readiness or complete BOM validation is claimed here.
+
+## October 3 result and limits
+
+Alexander observed a steady 5-metre hover. PX4 reported takeoff, landing, automatic disarming and passing post-flight preflight checks. ROS decoded attitude, status, local position and landed state before flight. This was a QGroundControl-operated reference flight with the DDS agent running, not a DronePi-controlled mapping mission. Quantitative hover duration and accuracy have not been measured.
+
+The pre-flight false heading_good_for_control flag was traced to isYawFinalAlignComplete() in the pinned source: magnetometer use requires in-flight magnetic alignment. Initial yaw alignment and magnetic heading consistency were true. Post-flight cs_mag_aligned_in_flight became true without a parameter bypass. The flag itself was not resampled after flight.
+
+The closed 1,128,821,943-byte ULog remains on the workstation with a user-verified same-disk archive copy. Its checksum and source revisions are in the manifest; raw log analysis and a separate backup remain pending. The startup error for libGstCameraSystem.so remains open, and camera streaming/image capture is unverified.

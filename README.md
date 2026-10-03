@@ -6,9 +6,9 @@ Hands-on semester begins January 2027. Final delivery is no later than May 5, 20
 
 ## Start here — repository overview
 
-Updated October 2, 2026. Goal: evaluate and build a modular mapping drone producing aerial photo maps and 3D models within a $2,000 purchase ceiling. Lead Mills is the first proposed field site.
+Updated October 3, 2026. Goal: evaluate and build a modular mapping drone producing aerial photo maps and 3D models within a $2,000 purchase ceiling. Lead Mills is the first proposed field site.
 
-**Current stage:** PX4/Gazebo X500 reference simulation and DronePi source evaluation. The proposed aircraft has not yet been modeled or validated. Twelve isolated repair checks passed on the Linux workstation; full DronePi integration remains pending.
+**Current stage:** PX4/Gazebo X500 reference simulation and DronePi source evaluation. The proposed aircraft has not yet been modeled or validated. Twelve isolated repair checks passed on the Linux workstation. On October 3, ROS telemetry reception and a QGroundControl-operated X500 takeoff, observed 5-metre hover and landing were demonstrated. Full DronePi integration remains pending.
 
 | Section | What you will find |
 |---|---|
@@ -16,7 +16,7 @@ Updated October 2, 2026. Goal: evaluate and build a modular mapping drone produc
 | [Design review](iterations/2026-09-27/Design_Review_2026-10-02.md) | BOM, power, interfaces and documentation gaps |
 | [Code review](iterations/2026-09-27/Code_Review_2026-10-02.md) | Reproduced software defects and integration limits |
 | [Verified repair checkpoint](iterations/2026-09-27/Repair_Checkpoint_2026-10-02.md) | Local commit, test results and archived patch |
-| [Daily log](iterations/2026-09-27/Daily_Log_2026-10-02.md) | Chronological activity and evidence |
+| [Daily log](iterations/2026-09-27/Daily_Log_2026-10-03.md) | Chronological activity and evidence |
 | [Daily plan](iterations/2026-09-27/Plan_2026-10-02.md) | Parallel work and handoffs |
 | [Weekly closeout](iterations/2026-09-27/Weekly_Closeout_2026-10-03.md) | Saturday summary, currently draft |
 | [Decisions](DECISIONS.md) | Rationale and project choices |
