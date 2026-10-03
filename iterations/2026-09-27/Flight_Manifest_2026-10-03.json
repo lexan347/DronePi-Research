@@ -1,0 +1,26 @@
+{
+  "test_date": "2026-10-03",
+  "iteration_start": "2026-09-27",
+  "vehicle": "PX4 reference X500",
+  "world": "default",
+  "launch_command": "make px4_sitl gz_x500",
+  "px4_commit": "d6f12ad1c4f70ad3230afd7d86e971421e02fef4",
+  "gazebo_submodule_commit": "b6127f4ec20de867e215fb5f78ae88b80f371909",
+  "agent_commit": "73622810d984349b80bbac0ef55fc0b694d62222",
+  "px4_msgs_commit": "86d8239e962f6939e05c3737784f60c02fa884db",
+  "log_file": "19_02_14.ulg",
+  "log_bytes": 1128821943,
+  "log_sha256": "0d5f0e7db468dc6897b4c1a8486a3d7f51e370d9b8436942dfdfd0f4a40cf17b",
+  "observations": [
+    "User observed ascent to 5 metres and steady hover.",
+    "PX4 reported takeoff, landing and automatic disarming.",
+    "Post-flight preflight check passed.",
+    "Post-flight estimator reported in-flight magnetic alignment complete.",
+    "ROS telemetry decoding verified before flight."
+  ],
+  "limitations": [
+    "Hover duration and accuracy have not been measured from the log.",
+    "DronePi mission software was not tested.",
+    "Gazebo camera plugin loading remains unresolved."
+  ]
+}
